@@ -1,8 +1,13 @@
 (ns wordless.wiki
   (:require [clojure.string :as string]
+            [clojure.pprint :as p]
             [clojurewerkz.elastisch.query :as q]
             [clojurewerkz.elastisch.rest.document :as esd]
             [clojurewerkz.elastisch.rest.response :as esrsp]))
+
+
+;; btw, there is an exact match
+;; http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-term-query.html
 
 (defn search-for
   "returns a esd result for the page with title word from wikipedia"
@@ -23,7 +28,9 @@
 (defn get-first-match [res]
   (get-first-n-matches res 1))
 
-(defn neighbors-of [word & total]
+(defn neighbors-of
+  "will return the total closest matches from es"
+  [word & total]
   (let [res (search-for (string/lower-case word))
         n (if (empty? total) 1 total)]
     (get-first-n-matches res n)))
@@ -44,13 +51,13 @@
         npr (filter #(Character/isLowerCase (first (first %))) result)]
     (sort #(> (second %) (second %2)) npr)))
 
-#_(defn stuff
-  [& args]
-  ;; performs a term query using a convenience function
-  (let [res  (esd/search "" "" :query (q/term :title "lemon"))
-        n    (esrsp/total-hits res)
-        hits (esrsp/hits-from res)
-        matches (map (comp :title :_source) hits)
-        all-links (map (comp :link :_source) hits)]
-    (println (format "Total hits: %d" n))
-    (pp/pprint matches)))
+
+;;; tf-idf stuff
+
+(defn term-frequency [entry-map]
+  (let [terms (-> entry-map
+                  (first)
+                  (:_source)
+                  (:text)
+                  (clojure.string/split  #" "))]
+    terms))

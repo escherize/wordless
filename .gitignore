@@ -8,3 +8,7 @@ pom.xml.asc
 *.class
 /.lein-*
 /.nrepl-port
+/fruit-links.txt
+/resources/.DS_Store
+/resources/untitled
+/resources/wordfreqs.csv
