@@ -14,6 +14,10 @@
 
   ;; note: there are a lot of methods in wn/*
 
+
+  ;; d3 wants to make get requests? fine. >_>!
+  (GET "/graph/" [word] (json/json-str (wn/syngraph word)))
+
   ;; {body :body} will grab the body from the POST request.
   ;; the body should be {"word" <word-instance>}.
   (POST "/graph/" {body :body} (json/json-str (wn/syngraph (body "word"))))

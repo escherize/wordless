@@ -15,6 +15,8 @@
                  [mysql/mysql-connector-java "5.1.6"]
                  [org.clojure/data.csv "0.1.2"]
                  [ring-cors "0.1.0"]]
+  :uberjar-name "helloworld-standalone.jar"
+  :min-lein-version "2.0.0"
   :plugins [[lein-ring "0.8.10"]]
   :ring {:handler wordless.handler/app}
   :profiles

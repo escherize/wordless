@@ -4,10 +4,8 @@
             [wordless.util :as u]
             [wordless.common-words :as cw :only word-freq]))
 
-
 "This library should be used to query the wordnet 3.1 mysql database maintained
  by Princeton University."
-
 
 (def db  (mysql {:db "wordnet31_snapshot"
                  :user "root"
@@ -65,7 +63,6 @@
   (->> word
       (word-to-synsetid )
       (map synsetid-to-words )
-      (filter #(not= 1 (count %)) )
       (map (fn [coll] (filter #(not= word %) coll)) )))
 
 (defn word-to-wordid [word]
@@ -80,7 +77,7 @@
       (word-to-wordid)
       (wordid-to-definitions)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;     begin explore
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -140,7 +137,6 @@
       (flatten)
       (distinct)))
 
-
 (defn penalize-word [word-score]
   (let [[w s] word-score
         freq (cw/word-freq w)]
@@ -171,6 +167,13 @@
        (sort-by second)
        (reverse)))
 
+(defn map-idxs
+  [sm]
+  (let [items (conj (first (vals sm)) (first (keys sm)))
+        list-of-entries (map (comp vec reverse)
+                             (map-indexed vector items))]
+    (into {} list-of-entries)))
+
 (defn links-for-map
   "returns edges for graph"
   [m]
@@ -180,9 +183,15 @@
 
 (defn nodes-and-links [syn-map]
   (let [nodes (distinct (flatten (seq syn-map)))
-        links (links-for-map syn-map)
-        prep-nodes (map #(assoc {} :name %) nodes)
-        prep-links (map (fn [[k v]] (assoc {} :source k :target v :value 1)) links)]
+        word-links (links-for-map syn-map)
+        links (->> word-links
+                   (flatten)
+                   (map (map-idxs syn-map))
+                   (partition 2)
+                   (map vec))
+        prep-nodes (map #(assoc {} :label %) nodes)
+        prep-links (map (fn [[k v]]
+                          (assoc {} :source k :target v :value 1)) links)]
     (assoc {}
         :nodes prep-nodes
         :links prep-links)))
@@ -190,9 +199,10 @@
 (defn syngraph [word]
   (nodes-and-links (synmap word)))
 
-(defn words-to-list [words-str]
+(defn words-to-list
+  "used when we take arguments like a,b,c ==> [a b c]"
+  [words-str]
   (clojure.string/split words-str #","))
-
 
 (defn summary-lst [words-str]
   (let [words (words-to-list words-str)
@@ -208,8 +218,5 @@
       (words-to-list)
       (related-words-2)
       (filter #(> 2 (second %)))))
-
-(related-words-2 ["orange" "lemon"])
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
