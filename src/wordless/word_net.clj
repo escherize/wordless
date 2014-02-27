@@ -27,62 +27,54 @@
   (table :word)
   (entity-fields :lemma))
 
-(defn wordid [w]
+(defentity sense ;; can probably grab more info from sense
+  (table :sense)
+  (pk :wordid)
+  (entity-fields :synsetid))
+
+(defn pg-wordid [w]
   (select word
           (fields :wordid)
           (where {:lemma w})))
 
-(wordid "lemon")
+(defn wordid [w] ;;must return 1.
+  (-> (pg-wordid w)
+      first
+      :wordid))
 
-(comment
-  (def mysql-db  (mysql {
-                         :db "wordnet31_snapshot"
-                         :user "root"
-                         :password ""
-                         :host "localhost"
-                         :port 3306}))
+(defn pg-word [wid]
+  (select word
+          (fields :lemma)
+          (where {:wordid wid})))
 
-  (defdb db-mysql mysql-db)
+(defn pg-synsetid [wid]
+  (select sense
+          (fields :synsetid)
+          (where {:wordid wid})))
 
-  (defentity words
-    (pk :wordid)
-    (table :words)
-    (entity-fields :lemma))
+(defn synsets [wid]
+  (map :synsetid (pg-synsetid wid)))
 
-  (defentity synsets
-    (pk :synsetid)
-    (table :synsets)
-    (entity-fields :synsetid :pos :lexdomainid :definition ))
+(defn pg-synwords [ssid]
+  (select sense
+          (where {:synsetid ssid})))
 
-  (defentity senses
-    (pk :senseid)
-    (table :senses)
-    (entity-fields :casedwordid :wordid :synsetid :senseid
-                   :sensenum :lexid :tagcount :sensekey ))
+(defn  word-to-synsetids [wstr]
+  (synsets (wordid wstr)))
 
-  (defentity sensesxsynsets
-    (table :sensesxsynsets)
-    (entity-fields :synsetid :wordid :casedwordid :senseid :sensenum :lexid
-                   :tagcount :sensekey :pos :lexdomainid :definition))
 
-  (defentity dict
-    (table :dict)
-    (entity-fields :synsetid :wordid :casedwordid :lemma :senseid
-                   :sensenum :lexid :tagcount :sensekey :cased :pos
-                   :lexdomainid :definition :sampleset)))
 
-(comment
-  (defn word-to-synsetid [word]
-    (map :synsetid (select dict (where {:lemma word}))))
-
-  (defn synsetid-to-words [id]
-    (map :lemma (select dict (where {:synsetid id})))))
-
+(defn synsetid-to-words [ssid]
+  (->> ssid
+       (pg-synwords)
+       (map :wordid )
+       (map pg-word )
+       (map (comp :lemma first) )))
 
 
 (defn synonyms [word]
   (->> word
-      (word-to-synsetid )
+      (word-to-synsetids )
       (map synsetid-to-words )
       (map (fn [coll] (filter #(not= word %) coll)))))
 
