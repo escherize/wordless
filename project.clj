@@ -13,6 +13,7 @@
                  ;; korma + mysql driver
                  [korma "0.3.0-RC5"]
                  [mysql/mysql-connector-java "5.1.6"]
+                 [org.postgresql/postgresql "9.2-1002-jdbc4"]
                  [org.clojure/data.csv "0.1.2"]
                  [ring-cors "0.1.0"]]
   :uberjar-name "helloworld-standalone.jar"

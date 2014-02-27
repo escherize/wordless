@@ -1,69 +1,90 @@
 (ns wordless.word-net
-  (:use [korma.db])
+  (:use [korma.db]
+        [korma.core])
   (:require [clojure.pprint :as pp]
-            [wordless.util :as u]
-            [wordless.common-words :as cw :only word-freq]))
-
-"This library should be used to query the wordnet 3.1 mysql database maintained
- by Princeton University."
-
-(def db  (mysql {:db "wordnet31_snapshot"
-                 :user "root"
-                 :password ""
-                 :host "localhost"
-                 :port 3306}))
-
-(defdb db-mysql db)
-
-(use 'korma.core)
+            [wordless.util :as u]))
 
 (declare adjpositions adjpositiontypes casedwords lexdomains
          lexlinks linktypes morphmaps morphs postypes samples
          semlinks senses synsets vframemaps vframes vframesentencemaps
          vframesentences words)
 
-(defentity words
+(defdb db-postgres
+  (postgres {
+             :user "postgres"
+             :password "idk"
+             :port 5432
+             :host "localhost"
+             :db "wordnet30"}))
+
+(defentity casedword
   (pk :wordid)
-  (table :words)
+  (table :casedword)
   (entity-fields :lemma))
 
-(defentity synsets
-  (pk :synsetid)
-  (table :synsets)
-  (entity-fields :synsetid :pos :lexdomainid :definition ))
+(defentity word
+  (pk :wordid)
+  (table :word)
+  (entity-fields :lemma))
 
-(defentity senses
-  (pk :senseid)
-  (table :senses)
-  (entity-fields :casedwordid :wordid :synsetid :senseid
-                 :sensenum :lexid :tagcount :sensekey ))
+(defn wordid [w]
+  (select word
+          (fields :wordid)
+          (where {:lemma w})))
 
-(defentity sensesxsynsets
-  (table :sensesxsynsets)
-  (entity-fields :synsetid :wordid :casedwordid :senseid :sensenum :lexid
-                 :tagcount :sensekey :pos :lexdomainid :definition))
+(wordid "lemon")
 
-(defentity dict
-  (table :dict)
-  (entity-fields :synsetid :wordid :casedwordid :lemma :senseid
-                 :sensenum :lexid :tagcount :sensekey :cased :pos
-                 :lexdomainid :definition :sampleset))
+(comment
+  (def mysql-db  (mysql {
+                         :db "wordnet31_snapshot"
+                         :user "root"
+                         :password ""
+                         :host "localhost"
+                         :port 3306}))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;       begin convineince
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defdb db-mysql mysql-db)
 
-(defn word-to-synsetid [word]
-  (map :synsetid (select dict (where {:lemma word}))))
+  (defentity words
+    (pk :wordid)
+    (table :words)
+    (entity-fields :lemma))
 
-(defn synsetid-to-words [id]
-  (map :lemma (select dict (where {:synsetid id}))))
+  (defentity synsets
+    (pk :synsetid)
+    (table :synsets)
+    (entity-fields :synsetid :pos :lexdomainid :definition ))
+
+  (defentity senses
+    (pk :senseid)
+    (table :senses)
+    (entity-fields :casedwordid :wordid :synsetid :senseid
+                   :sensenum :lexid :tagcount :sensekey ))
+
+  (defentity sensesxsynsets
+    (table :sensesxsynsets)
+    (entity-fields :synsetid :wordid :casedwordid :senseid :sensenum :lexid
+                   :tagcount :sensekey :pos :lexdomainid :definition))
+
+  (defentity dict
+    (table :dict)
+    (entity-fields :synsetid :wordid :casedwordid :lemma :senseid
+                   :sensenum :lexid :tagcount :sensekey :cased :pos
+                   :lexdomainid :definition :sampleset)))
+
+(comment
+  (defn word-to-synsetid [word]
+    (map :synsetid (select dict (where {:lemma word}))))
+
+  (defn synsetid-to-words [id]
+    (map :lemma (select dict (where {:synsetid id})))))
+
+
 
 (defn synonyms [word]
   (->> word
       (word-to-synsetid )
       (map synsetid-to-words )
-      (map (fn [coll] (filter #(not= word %) coll)) )))
+      (map (fn [coll] (filter #(not= word %) coll)))))
 
 (defn word-to-wordid [word]
   (map :wordid (select words (where {:lemma word}))))
@@ -133,9 +154,15 @@
   (->> word
       (synonyms)
       (flatten)
-      (map synonyms )
+      (map synonyms)
       (flatten)
       (distinct)))
+
+(defn synsyn-graph [word]
+  (->> word
+      (synonyms)
+
+      ))
 
 (defn penalize-word [word-score]
   (let [[w s] word-score

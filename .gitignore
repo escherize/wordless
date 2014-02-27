@@ -3,6 +3,7 @@
 /classes
 /checkouts
 /pom.xml
+/doc
 pom.xml.asc
 *.jar
 *.class
@@ -13,3 +14,4 @@ pom.xml.asc
 /resources/.DS_Store
 /resources/untitled
 /resources/wordfreqs.csv
+/src/.DS_Store
