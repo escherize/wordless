@@ -3,7 +3,7 @@
             [compojure.core :refer :all]
             [compojure.handler :as handler]
             [compojure.route :as route]
-            [wordless.word-net :as wn]
+            [wordless.word_net :as wn]
             [ring.middleware.cors :as cors]
             [ring.middleware.json :as rjson]))
 
