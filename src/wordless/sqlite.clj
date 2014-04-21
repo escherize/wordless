@@ -41,16 +41,18 @@
 (defn synmap [word]
   "returns a map like {word (syn1, syn2, ...)}
    note this is different than {word ((synset1)(synset2)(synset3))}"
-  (assoc {} word (-> word
-                     (synonyms)
-                     (flatten)
-                     (distinct))))
-(defn map-idxs
+  (assoc {} word (-> word synonyms flatten distinct)))
+
+#_(defn map-idxs
   [sm]
   (let [items (conj (first (vals sm)) (first (keys sm)))
         list-of-entries (map (comp vec reverse)
                              (map-indexed vector items))]
     (into {} list-of-entries)))
+
+(defn ejes [sm]
+  (let [target (range 2 (inc (count sm)) 2)]
+    (map #(vector %1 %2) (repeatedly (fn [] 1)) target)))
 
 (defn links-for-map
   "returns edges for graph"
@@ -60,19 +62,15 @@
                           (for [i v] [k i])))))
 
 (defn nodes-and-links [syn-map]
-  (let [nodes (distinct (flatten (seq syn-map)))
+  (print-let [nodes (distinct (flatten (seq syn-map)))
         word-links (links-for-map syn-map)
-        links (->> word-links
-                   (flatten)
-                   (map (map-idxs syn-map))
-                   (partition 2)
-                   (map vec))
-        prep-nodes (map #(assoc {} :label %) nodes)
-        prep-links (map (fn [[k v]]
-                          (assoc {} :source k :target v :value 1)) links)]
+        links (print->> word-links
+                   flatten
+                   (ejes syn-map))]
     (assoc {}
-      :nodes prep-nodes
-      :links prep-links)))
+      :nodes (mapv #(assoc {} :label %) nodes)
+      :links (mapv (fn [[k v]]
+                    (assoc {} :source k :target v :value 1)) links))))
 
 (defn syngraph [word]
   (nodes-and-links (synmap word)))
