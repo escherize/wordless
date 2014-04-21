@@ -3,24 +3,16 @@
             [compojure.core :refer :all]
             [compojure.handler :as handler]
             [compojure.route :as route]
-            [wordless.word_net :as wn]
+            [wordless.sqlite :as sqlite]
             [ring.middleware.cors :as cors]
             [ring.middleware.json :as rjson]))
-
-
 
 (defroutes app-routes
   (GET "/" [] "Just started up?")
 
-  ;; note: there are a lot of methods in wn/*
-
-
-  ;; d3 wants to make get requests? fine. >_>!
-  (GET "/graph/" [word] (json/json-str (wn/syngraph word)))
-
-  ;; {body :body} will grab the body from the POST request.
-  ;; the body should be {"word" <word-instance>}.
-  (POST "/graph/" {body :body} (json/json-str (wn/syngraph (body "word"))))
+  (GET "/graph/" [word] (json/json-str (sqlite/syngraph word)))
+  ;; {body :body} will destructure the body from the POST request.
+  (POST "/graph/" {body :body} (json/json-str (sqlite/syngraph (body "word"))))
 
   (route/resources "")
   (route/not-found "Not Found"))
@@ -30,8 +22,7 @@
   [handler]
   (fn [request]
    (let [response (handler request)]
-    (assoc-in response [:headers "Access-Control-Allow-Origin"]
-         "*"))))
+    (assoc-in response [:headers "Access-Control-Allow-Origin"] "*"))))
 
 (defn options-200
   "middleware function to always 200 an OPTIONS request"
