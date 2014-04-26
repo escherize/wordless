@@ -19,7 +19,8 @@
   :uberjar-name "wordless-server.jar"
 
   :min-lein-version "2.0.0"
-  :plugins [[lein-ring "0.8.10"]]
+  :plugins [[lein-ring "0.8.10"]
+            [lein-beanstalk "0.2.7"]]
   :ring {:handler wordless.handler/app
          :init wordless.sqlite/start-db!}
   :profiles
