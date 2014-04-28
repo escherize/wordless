@@ -11,32 +11,34 @@
 (defn start-db! []
   (sh "./resources/sqlite3" "./db/wordnet-sql.db"))
 
-(defn- wordid->lemma [wordid]
-  (j/query db ["select * from words where wordid = ?" (str wordid)]))
+(defn- lemma->word-id [lemma]
+  (first
+   (j/query db ["select * from words where lemma = ?" (str lemma)])))
 
-(defn- lemma->wordid [lemma]
-  (first (j/query db ["select * from words where lemma = ?" (str lemma)])))
+(defn- word-id->lemma [word-id]
+  (j/query db ["select * from words where wordid = ?" (str word-id)]))
 
 (defn- lemma->sensesXsynsets [lemma]
-  (let [wid (-> lemma lemma->wordid :wordid)]
+  (let [wid (-> lemma lemma->word-id :wordid)]
     (j/query db ["select * from sensesXsynsets where wordid = ?" wid])))
 
 (defn- lemma->wordsXsensesXsynsets [lemma]
-  (let [wid (-> lemma lemma->wordid :wordid)]
-    (j/query db ["select * from wordsXsensesXsynsets Where wordid = ?" wid])))
+  (let [wid (-> lemma lemma->word-id :wordid)]
+    (j/query db ["select * from wordsXsensesXsynsets where wordid = ?" wid])))
 
 (defn- synsetids->lemmas [ssids]
   (let [opts (clojure.string/join ", " ssids)]
     (j/query db [(format  "select * from wordsXsensesXsynsets where synsetid in (%s)" opts)])))
 
+;(time  (->> "select * from words where lemma = 'oranges';" (j/prepare-statement conn) j/.executeQuery j/result-set-seq))
+
 (defn synonyms [lemma]
-  (->>
-   lemma
-   lemma->wordsXsensesXsynsets
-   (map :synsetid)
-   synsetids->lemmas
-   (map :lemma)
-   distinct))
+  (->>   lemma
+         lemma->wordsXsensesXsynsets
+         (map :synsetid)
+         synsetids->lemmas
+         (map :lemma)
+         distinct))
 
 (defn synmap [word]
   "returns a map like {word (syn1, syn2, ...)}
@@ -50,10 +52,6 @@
                              (map-indexed vector items))]
     (into {} list-of-entries)))
 
-(defn ejes [sm]
-  (let [target (range 2 (inc (count sm)) 2)]
-    (map #(vector %1 %2) (repeatedly (fn [] 1)) target)))
-
 (defn links-for-map
   "returns edges for graph"
   [m]
@@ -61,16 +59,16 @@
                           (links-for-map v)
                           (for [i v] [k i])))))
 
+(defn first-connector [size]
+  (map #(vector %1 %2) (repeat 0) (range 1 size)))
+
 (defn nodes-and-links [syn-map]
   (print-let [nodes (distinct (flatten (seq syn-map)))
-        word-links (links-for-map syn-map)
-        links (print->> word-links
-                   flatten
-                   (ejes syn-map))]
-    (assoc {}
-      :nodes (mapv #(assoc {} :label %) nodes)
-      :links (mapv (fn [[k v]]
-                    (assoc {} :source k :target v :value 1)) links))))
+              edges (first-connector (count nodes))]
+             (assoc {}
+               :nodes (mapv #(assoc {} :label % :weight 0) nodes)
+               :links (mapv (fn [[k v]]
+                              (assoc {} :source k :target v)) edges))))
 
 (defn syngraph [word]
   (nodes-and-links (synmap word)))

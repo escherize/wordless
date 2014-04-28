@@ -8,7 +8,7 @@
             [ring.middleware.json :as rjson]))
 
 (defroutes app-routes
-  (GET "/" [] "Just started up?")
+  (GET "/" [] "<h1>Just started up?</h1>")
 
   (GET "/graph/" [word] (json/json-str (sqlite/syngraph word)))
   ;; {body :body} will destructure the body from the POST request.
