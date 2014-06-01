@@ -1,18 +1,18 @@
 (ns wordless.handler
-  (:require [clojure.data.json :as json]
-            [compojure.core :refer :all]
+  (:require [compojure.core :refer :all]
+            [clojure.data.json :as json]
             [compojure.handler :as handler]
             [compojure.route :as route]
-            [wordless.sqlite :as sqlite]
+            [wordless.synonyms :as syns]
             [ring.middleware.cors :as cors]
             [ring.middleware.json :as rjson]))
 
 (defroutes app-routes
   (GET "/" [] "<h1>Just started up?</h1>")
 
-  (GET "/graph/" [word] (json/json-str (sqlite/syngraph word)))
+  (GET "/graph/" [word] (json/json-str (syns/syngraph word)))
   ;; {body :body} will destructure the body from the POST request.
-  (POST "/graph/" {body :body} (json/json-str (sqlite/syngraph (body "word"))))
+  (POST "/graph/" {body :body} (json/json-str (syns/syngraph (body "word"))))
 
   (route/resources "")
   (route/not-found "Not Found"))
@@ -21,8 +21,8 @@
   "middleware function to allow crosss origin"
   [handler]
   (fn [request]
-   (let [response (handler request)]
-    (assoc-in response [:headers "Access-Control-Allow-Origin"] "*"))))
+    (let [response (handler request)]
+      (assoc-in response [:headers "Access-Control-Allow-Origin"] "*"))))
 
 (defn options-200
   "middleware function to always 200 an OPTIONS request"
@@ -39,9 +39,9 @@
   [handler]
   (fn [request]
     (let [response (handler request)]
-      (println "request:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      (println "request ----->                          ")
       (clojure.pprint/pprint request)
-      (println "response:===============================")
+      (println "response ~-~-~->                        ")
       (clojure.pprint/pprint response)
       response)))
 
@@ -50,14 +50,7 @@
       (options-200)
       (cors/wrap-cors :access-control-allow-origin #".*"
                       :access-control-allow-credentials "true"
-                      :access-control-allow-headers ["Origin"
-                                                     "X-Requested-With"
-                                                     "Content-Type"
-                                                     "Accept"]
-                      :access-control-allow-methods ["GET"
-                                                     "POST"
-                                                     "PUT"
-                                                     "DELETE"
-                                                     "OPTIONS"])
+                      :access-control-allow-headers ["Origin" "X-Requested-With" "Content-Type" "Accept"]
+                      :access-control-allow-methods ["GET" "POST" "PUT"])
       (logger)
       (rjson/wrap-json-body)))
