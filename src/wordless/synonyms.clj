@@ -17,7 +17,7 @@
          defs->words
          (filter (partial u/longer-than 3))
          u/sanitize
-         (sort-by count)
+         (sort-by (comp - count))
          (take 20)))
 
 (defn word->synmap [word]
