@@ -7,12 +7,14 @@
             [ring.middleware.cors :as cors]
             [ring.middleware.json :as rjson]))
 
+(syns/syngraph "lemon")
+
 (defroutes app-routes
   (GET "/" [] "<h1>Just started up?</h1>")
 
-  (GET "/graph/" [word] (json/json-str (syns/syngraph word)))
+  (GET "/graph/" [word] (json/write-str (syns/syngraph word)))
   ;; {body :body} will destructure the body from the POST request.
-  (POST "/graph/" {body :body} (json/json-str (syns/syngraph (body "word"))))
+  ;; (POST "/graph/" {body :body} (json/json-str (syns/syngraph (body "word"))))
 
   (route/resources "")
   (route/not-found "Not Found"))
@@ -50,7 +52,10 @@
       (options-200)
       (cors/wrap-cors :access-control-allow-origin #".*"
                       :access-control-allow-credentials "true"
-                      :access-control-allow-headers ["Origin" "X-Requested-With" "Content-Type" "Accept"]
+                      :access-control-allow-headers ["Origin"
+                                                     "X-Requested-With"
+                                                     "Content-Type"
+                                                     "Accept"]
                       :access-control-allow-methods ["GET" "POST" "PUT"])
       (logger)
       (rjson/wrap-json-body)))

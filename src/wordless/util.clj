@@ -17,6 +17,4 @@
   (< n (count word)))
 
 (defn sanitize [words]
-  (map #(str/replace % #"\(|\)" "") words))
-
-
+  (map #(str/replace % #"\(|\)|\;" "") words))

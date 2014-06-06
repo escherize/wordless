@@ -10,11 +10,11 @@
                  [ring/ring-json "0.2.0"]
                  [org.clojure/clojure "1.5.1"]
                  [print-foo "0.5.0"]
+                 [com.taoensso/carmine "2.6.0"]
                  ]
   :min-lein-version "2.0.0"
   :plugins [[lein-ring "0.8.10"]]
-  :ring {:handler wordless.handler/app
-         :init wordless.sqlite/start-db!}
+  :ring {:handler wordless.handler/app}
   :profiles
   {:dev {:dependencies [[javax.servlet/servlet-api "2.5"]
                         [ring-mock "0.1.5"]
