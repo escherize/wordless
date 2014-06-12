@@ -1,6 +1,7 @@
 (ns wordless.redis
   (:require [print.foo :refer :all]
-            [taoensso.carmine :as car :refer (wcar)]))
+            [taoensso.carmine :as car :refer (wcar)]
+            [clojure.java.shell :as sh :only [sh]]))
 
 (defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
 
@@ -10,8 +11,13 @@
   (or (wcar* (car/zrange word 0 -1))
       (wcar* (car/zrange (str word) 0 -1))))
 
-(comment
+(defn start-redis! []
+  (or 
+   (sh/sh "redis-server" "resources/redis.conf"))
+  "ok.")
 
+(comment
+  
   (defn insert-redis-word [word]
     (let [related (syn/related-words word)]
       (map #(wcar* (car/zadd word 0 %)) related)))

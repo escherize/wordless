@@ -28,11 +28,19 @@
     {:nodes (mapv #(assoc {} :label % :weight 0) nodes)
      :links (mapv (fn [[k v]] {:source k :target v}) edges)}))
 
+(defn singularize [word]
+  (if (.endsWith word "s")
+    (apply str (drop-last word))))
+
+(defn related-words [word]
+  (or (r/related-words word)
+      (r/related-words (.toLowerCase word))))
+
 (defn word->nodes [word]
   (->> word
-       r/related-words
+       related-words
        (into [word])
-       (take 20)))
+       (take 15)))
 
 (defn syngraph [word]
   (-> word
