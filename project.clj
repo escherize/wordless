@@ -11,6 +11,7 @@
                  [org.clojure/clojure "1.5.1"]
                  [print-foo "0.5.0"]
                  [com.taoensso/carmine "2.6.0"]
+                 [inflections "0.9.7"]
                  ]
   :min-lein-version "2.0.0"
   :plugins [[lein-ring "0.8.10"]]
