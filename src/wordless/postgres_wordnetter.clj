@@ -1,2 +1,0 @@
-(ns wordless.postgres-wordnetter)
-
