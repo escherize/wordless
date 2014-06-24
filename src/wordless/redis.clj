@@ -4,36 +4,48 @@
             [clojure.java.shell :as sh :only [sh]]
             [clojure.string :as str]))
 
-(defmacro wcar* [& body] `(car/wcar server1-conn ~@body))
+(defmacro wcar* [& body] `(car/wcar conn ~@body))
+(def conn {:pool {} :spec {:port 6380}})
+(def count-marker "c__")
 
-(def server1-conn {:pool {} :spec {}})
 
-(defn start-redis! []
-  (let [on-ubuntu (= "ubuntu"
-                     (-> "whoami" sh/sh :out str/trim))
-        resources-dir (-> "pwd" sh/sh :out str/trim (str "/resources/"))]
-    (if on-ubuntu
-      (sh/sh "redis-server" (str resources-dir "redis.conf"))
-      (sh/sh "redis-server" (str resources-dir "redis-local.conf")))))
 
-(defn related-words [word]
-  (let [result (wcar* (car/zrange word 0 -1))]
-    (if (= [] result) nil result)))
+;; word frequency
+(defn insert-word-count
+  [word count]
+  (wcar* (car/set (str count-marker word) count)))
+
+(defn get-word-count
+  [word]
+  (try
+    (read-string (wcar* (car/get (str count-marker word))))
+    (catch Exception e 0)))
+
+(defn insert-related-words
+  [word1 word2 count]
+  (wcar* (car/zadd word1 count word2)))
+
+(defn- unnormalized-score:word
+  [word size]
+  (->> (wcar* (car/zrange word 0 -1  "withscores"))
+       reverse
+       (take (* 2 size))
+       (partition 2)
+       (mapv reverse)))
+
+(defn get-related-words
+  [source]
+  (let [result (unnormalized-score:word source 50)]
+    (if (not= [] result) result nil)))
 
 (comment
 
-  (defn insert-redis-word [word]
-    (let [related (syn/related-words word)]
-      (map #(wcar* (car/zadd word 0 %)) related)))
+  ;; word counts
+  (insert-word-count "apple" 3)
+  (get-word-count "apple")
 
-  (defn recreate-disk-db! [you-sure?]
-    (when you-sure?
-      (let [words-to-insert (-> "out.txt" slurp clojure.string/split-lines)]
-        (map insert-redis-word words-to-insert))))
-
-  (wcar* (car/set "k1" "v1")
-         (car/get "k1"))
-
-  
+  ;; word relations
+  ;; (insert-related-words "w1" "w2" count)
+  (get-related-words "orange")
 
   )
